@@ -37,13 +37,12 @@ func onQuitClicked() {
 	}
 }
 
-func startTray(iconData []byte, onShow, onQuit func()) {
+func startTray(iconData []byte, onShow, onToggle, onQuit func()) {
 	trayShowFn = onShow
 	trayQuitFn = onQuit
 
 	tmp := filepath.Join(os.TempDir(), "wdtt-tray-icon.png")
 
-	// Resize to 22x22 for AppIndicator
 	if src, _, err := image.Decode(bytes.NewReader(iconData)); err == nil {
 		dst := image.NewRGBA(image.Rect(0, 0, 22, 22))
 		draw.BiLinear.Scale(dst, dst.Bounds(), src, src.Bounds(), draw.Over, nil)
@@ -68,4 +67,12 @@ func setTrayVisible(v bool) {
 		vis = C.int(1)
 	}
 	C.wdtt_tray_set_visible(vis)
+}
+
+func setTrayStatus(connected bool, rx, tx int64, workers int32) {
+	c := C.int(0)
+	if connected {
+		c = C.int(1)
+	}
+	C.wdtt_tray_set_status(c, C.longlong(rx), C.longlong(tx), C.int(workers))
 }

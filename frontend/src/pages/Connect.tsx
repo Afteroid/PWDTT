@@ -1,5 +1,60 @@
 import { useState, useEffect } from 'react';
-import { IconCloverFilled, IconPlus, IconChevronUp, IconPencil } from '@tabler/icons-react';
+import type React from 'react';
+import {
+  IconCloverFilled, IconPlus, IconChevronUp, IconPencil,
+  IconFlameFilled, IconShieldFilled, IconLayoutGridFilled, IconCloudFilled, IconBrandSpeedtest,
+  IconStarFilled, IconHeartFilled, IconBoltFilled, IconRocket,
+  IconCrownFilled, IconDiamondFilled, IconLeafFilled, IconSnowflake,
+  IconServer, IconGlobe, IconLockFilled, IconWifi,
+} from '@tabler/icons-react';
+
+const SERVER_ICONS: { key: string; render: (size: number) => React.ReactNode }[] = [
+  { key: 'clover',     render: s => <IconCloverFilled size={s} /> },
+  { key: 'flame',      render: s => <IconFlameFilled size={s} /> },
+  { key: 'shield',     render: s => <IconShieldFilled size={s} /> },
+  { key: 'grid',       render: s => <IconLayoutGridFilled size={s} /> },
+  { key: 'cloud',      render: s => <IconCloudFilled size={s} /> },
+  { key: 'speed',      render: s => <IconBrandSpeedtest size={s} stroke={2} /> },
+  { key: 'star',       render: s => <IconStarFilled size={s} /> },
+  { key: 'heart',      render: s => <IconHeartFilled size={s} /> },
+  { key: 'bolt',       render: s => <IconBoltFilled size={s} /> },
+  { key: 'rocket',     render: s => <IconRocket size={s} stroke={2} /> },
+  { key: 'crown',      render: s => <IconCrownFilled size={s} /> },
+  { key: 'diamond',    render: s => <IconDiamondFilled size={s} /> },
+  { key: 'leaf',       render: s => <IconLeafFilled size={s} /> },
+  { key: 'snowflake',  render: s => <IconSnowflake size={s} stroke={2} /> },
+  { key: 'server',     render: s => <IconServer size={s} stroke={2} /> },
+  { key: 'globe',      render: s => <IconGlobe size={s} stroke={2} /> },
+  { key: 'lock',       render: s => <IconLockFilled size={s} /> },
+  { key: 'wifi',       render: s => <IconWifi size={s} stroke={2} /> },
+  { key: 'flag-ru',    render: s => <img src="/flags/ru.svg" width={s} height={s * 0.67} style={{ objectFit: 'cover', borderRadius: 2 }} /> },
+  { key: 'flag-us',    render: s => <img src="/flags/us.svg" width={s} height={s * 0.67} style={{ objectFit: 'cover', borderRadius: 2 }} /> },
+  { key: 'flag-de',    render: s => <img src="/flags/de.svg" width={s} height={s * 0.67} style={{ objectFit: 'cover', borderRadius: 2 }} /> },
+  { key: 'flag-nl',    render: s => <img src="/flags/nl.svg" width={s} height={s * 0.67} style={{ objectFit: 'cover', borderRadius: 2 }} /> },
+  { key: 'flag-fi',    render: s => <img src="/flags/fi.svg" width={s} height={s * 0.67} style={{ objectFit: 'cover', borderRadius: 2 }} /> },
+  { key: 'flag-fr',    render: s => <img src="/flags/fr.svg" width={s} height={s * 0.67} style={{ objectFit: 'cover', borderRadius: 2 }} /> },
+  { key: 'flag-gb',    render: s => <img src="/flags/gb.svg" width={s} height={s * 0.67} style={{ objectFit: 'cover', borderRadius: 2 }} /> },
+  { key: 'flag-jp',    render: s => <img src="/flags/jp.svg" width={s} height={s * 0.67} style={{ objectFit: 'cover', borderRadius: 2 }} /> },
+  { key: 'flag-pl',    render: s => <img src="/flags/pl.svg" width={s} height={s * 0.67} style={{ objectFit: 'cover', borderRadius: 2 }} /> },
+  { key: 'flag-se',    render: s => <img src="/flags/se.svg" width={s} height={s * 0.67} style={{ objectFit: 'cover', borderRadius: 2 }} /> },
+  { key: 'flag-ch',    render: s => <img src="/flags/ch.svg" width={s} height={s * 0.67} style={{ objectFit: 'cover', borderRadius: 2 }} /> },
+  { key: 'flag-lt',    render: s => <img src="/flags/lt.svg" width={s} height={s * 0.67} style={{ objectFit: 'cover', borderRadius: 2 }} /> },
+  { key: 'flag-lv',    render: s => <img src="/flags/lv.svg" width={s} height={s * 0.67} style={{ objectFit: 'cover', borderRadius: 2 }} /> },
+  { key: 'flag-ee',    render: s => <img src="/flags/ee.svg" width={s} height={s * 0.67} style={{ objectFit: 'cover', borderRadius: 2 }} /> },
+  { key: 'flag-cz',    render: s => <img src="/flags/cz.svg" width={s} height={s * 0.67} style={{ objectFit: 'cover', borderRadius: 2 }} /> },
+  { key: 'flag-at',    render: s => <img src="/flags/at.svg" width={s} height={s * 0.67} style={{ objectFit: 'cover', borderRadius: 2 }} /> },
+  { key: 'flag-ca',    render: s => <img src="/flags/ca.svg" width={s} height={s * 0.67} style={{ objectFit: 'cover', borderRadius: 2 }} /> },
+  { key: 'flag-au',    render: s => <img src="/flags/au.svg" width={s} height={s * 0.67} style={{ objectFit: 'cover', borderRadius: 2 }} /> },
+  { key: 'flag-sg',    render: s => <img src="/flags/sg.svg" width={s} height={s * 0.67} style={{ objectFit: 'cover', borderRadius: 2 }} /> },
+  { key: 'flag-hk',    render: s => <img src="/flags/hk.svg" width={s} height={s * 0.67} style={{ objectFit: 'cover', borderRadius: 2 }} /> },
+  { key: 'flag-tr',    render: s => <img src="/flags/tr.svg" width={s} height={s * 0.67} style={{ objectFit: 'cover', borderRadius: 2 }} /> },
+  { key: 'flag-kz',    render: s => <img src="/flags/kz.svg" width={s} height={s * 0.67} style={{ objectFit: 'cover', borderRadius: 2 }} /> },
+];
+
+function ServerIcon({ iconKey, size }: { iconKey?: string; size: number }) {
+  const entry = SERVER_ICONS.find(i => i.key === (iconKey ?? 'clover')) ?? SERVER_ICONS[0];
+  return <>{entry.render(size)}</>;
+}
 import AddServer from '../modals/Add-server';
 import EditServer from '../modals/Edit-server';
 import { serverStore } from '../lib/store';
@@ -63,50 +118,55 @@ export default function Connect() {
       const host = `${consumed.ip}:${consumed.dtlsPort}`;
       const name = consumed.name;
 
-      const finish = async (saveHashes: boolean) => {
+      const applyLink = async () => {
+        const h4 = consumed.hashes.slice(0, 4);
+        const padded: [string,string,string,string] = [h4[0]??'', h4[1]??'', h4[2]??'', h4[3]??''];
         await SaveProfile(name, {
           peer: host,
           password: consumed.password,
-          hashes: saveHashes ? consumed.hashes : [],
+          hashes: [],
           turn: '', port: '', device_id: '', listen: '',
         });
-        // не дублируем если сервер с таким host уже есть
         const existing = serverStore.getAll().find(s => s.host === host);
-        const s = existing ?? serverStore.add({ name, host, password: consumed.password });
+        let s = existing ?? serverStore.add({ name, host, password: consumed.password });
+        if (consumed.hashes.length > 0) {
+          const updated = { ...s, hashes: padded };
+          serverStore.update(updated);
+          s = updated;
+        }
         setServers(serverStore.getAll());
-        setSelected(s);
+        setSelected({ ...s });
         setLinkFlash(true);
         setTimeout(() => setLinkFlash(false), 800);
         toastStore.show(existing ? `Профиль обновлён: ${name}` : `Профиль добавлен: ${name}`, 3000);
-        if (saveHashes) {
-          const settings = settingsStore.get();
-          settingsStore.save({ ...settings, hashes: consumed.hashes.slice(0, 4) as [string,string,string,string] });
-        }
       };
-
-      if (consumed.hashes.length > 0) {
-        const yes = window.confirm(`Ссылка содержит хеши. Перезаписать текущие хеши?`);
-        finish(yes);
-      } else {
-        finish(false);
-      }
+      applyLink();
     });
   }, []);
 
   const doConnect = async () => {
     const s = settingsStore.get();
-    const hashes = s.hashes.filter(h => h.trim());
+    const hashes = (s.useGlobalHashes
+      ? s.hashes
+      : (selected!.hashes ?? s.hashes)
+    ).filter(h => h.trim());
     if (hashes.length === 0) {
-      toastStore.show('Добавьте хеши в Настройках');
+      toastStore.show(s.useGlobalHashes
+        ? 'Добавьте хеши в Настройках'
+        : 'Добавьте хеши профиля или включите глобальные в Настройках'
+      );
       return;
     }
     tunnelStore.set('connecting');
     try {
+      const workers = s.useGlobalHashes
+        ? (s.power || 9)
+        : (selected!.power || Math.max(9, hashes.length * 9));
       await WailsConnect({
         profile: selected!.name,
         captchaMode: 'auto',
-        workers: s.power || 9,
-        mtu: s.mtu || 1280,
+        workers,
+        mtu: s.mtu || 1380,
         hashes,
       });
     } catch {
@@ -154,6 +214,24 @@ export default function Connect() {
     if (selected?.id === id) setSelected(all[0] ?? null);
   };
 
+  const [iconMenu, setIconMenu] = useState<{ server: Server; x: number; y: number } | null>(null);
+
+  const handleIconClick = (e: React.MouseEvent, server: Server) => {
+    e.stopPropagation();
+    const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
+    setIconMenu({ server, x: rect.left, y: rect.top });
+  };
+
+  const handlePickIcon = (key: string) => {
+    if (!iconMenu) return;
+    const updated = { ...iconMenu.server, icon: key };
+    serverStore.update(updated);
+    const all = serverStore.getAll();
+    setServers(all);
+    if (selected?.id === iconMenu.server.id) setSelected(updated);
+    setIconMenu(null);
+  };
+
   const isActive = tunnelState === 'connected';
   const isSpinning = tunnelState === 'connecting' || tunnelState === 'disconnecting';
   const isBusy = tunnelState === 'disconnecting';
@@ -190,6 +268,11 @@ export default function Connect() {
         .status-ping { display: flex; align-items: center; gap: 6px; font-size: 14px; }
         .ping-dot { width: 8px; height: 8px; border-radius: 50%; }
         .tunnel-label { position: absolute; top: 50%; left: 50%; transform: translate(-50%, calc(-50% + 80px)); font-size: 13px; color: var(--text-3); pointer-events: none; }
+        .icon-picker { position: fixed; z-index: 200; background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 10px; box-shadow: var(--shadow); display: grid; grid-template-columns: repeat(6, 36px); gap: 4px; animation: modal-in 0.15s ease-out; }
+        .icon-picker-btn { width: 36px; height: 36px; display: flex; align-items: center; justify-content: center; background: none; border: 1px solid transparent; border-radius: 8px; cursor: pointer; color: var(--text); font-size: 18px; }
+        .icon-picker-btn:hover { background: var(--bg-3); border-color: var(--border); }
+        .icon-picker-btn--active { background: var(--bg-3); border-color: var(--accent); }
+
       `}</style>
       <main className="main">
         <button className="btn-add" onClick={() => setAddServerOpen(true)}>
@@ -216,15 +299,16 @@ export default function Connect() {
           {listOpen && servers.length > 0 && (
             <div className="server-list">
               {servers.map(s => (
-                <div key={s.id} className={`server-item${s.id === selected?.id ? ' server-item--active' : ''}`}>
-                  <button className="server-icon-btn" onClick={() => setEditServer(s)}>
-                    <IconCloverFilled size={20} />
+                <div
+                  key={s.id}
+                  className={`server-item${s.id === selected?.id ? ' server-item--active' : ''}`}
+                  style={{ cursor: 'pointer' }}
+                  onClick={() => { setSelected({ ...s }); setListOpen(false); }}
+                >
+                  <button className="server-icon-btn" onClick={(e) => { e.stopPropagation(); handleIconClick(e, s); }}>
+                    <ServerIcon iconKey={s.icon} size={20} />
                   </button>
-                  <span
-                    className="status-name"
-                    style={{ cursor: 'pointer' }}
-                    onClick={() => { setSelected(s); setListOpen(false); }}
-                  >
+                  <span className="status-name">
                     {s.name}
                   </span>
                   {s.ping != null && (
@@ -233,7 +317,7 @@ export default function Connect() {
                       {s.ping}
                     </span>
                   )}
-                  <button className="server-edit-btn" onClick={() => setEditServer(s)}>
+                  <button className="server-edit-btn" onClick={(e) => { e.stopPropagation(); setEditServer(s); }}>
                     <IconPencil size={15} stroke={2} />
                   </button>
                 </div>
@@ -242,7 +326,7 @@ export default function Connect() {
           )}
 
           <button className={`status-server${!selected ? ' status-server--empty' : ''}`} onClick={() => setListOpen(o => !o)}>
-            <IconCloverFilled size={20} />
+            <ServerIcon iconKey={selected?.icon} size={20} />
             <span className="status-name">{selected ? selected.name : 'Нет серверов'}</span>
             {selected?.ping != null && (
               <span className="status-ping">
@@ -266,7 +350,32 @@ export default function Connect() {
             onDelete={handleDelete}
           />
         )}
+
+        {iconMenu && (
+          <>
+            <div style={{ position: 'fixed', inset: 0, zIndex: 199 }} onClick={() => setIconMenu(null)} />
+            <div
+              className="icon-picker"
+              style={{
+                left: Math.min(iconMenu.x, window.innerWidth - 256),
+                top: iconMenu.y - 4 - (Math.ceil(SERVER_ICONS.length / 6) * 40 + 20),
+              }}
+            >
+              {SERVER_ICONS.map(ic => (
+                <button
+                  key={ic.key}
+                  className={`icon-picker-btn${(iconMenu.server.icon ?? 'clover') === ic.key ? ' icon-picker-btn--active' : ''}`}
+                  onClick={() => handlePickIcon(ic.key)}
+                  title={ic.key}
+                >
+                  {ic.render(18)}
+                </button>
+              ))}
+            </div>
+          </>
+        )}
       </main>
+
     </>
   );
 }

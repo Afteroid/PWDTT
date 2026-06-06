@@ -3,11 +3,13 @@ module pwdtt-desktop
 go 1.26
 
 require (
+	github.com/google/uuid v1.6.0
 	github.com/lxn/win v0.0.0-20210218163916-a377121e959e
 	github.com/wailsapp/wails/v2 v2.12.0
 	golang.org/x/crypto v0.52.0
 	golang.org/x/image v0.41.0
 	golang.org/x/sys v0.45.0
+	golang.zx2c4.com/wireguard v0.0.0-20260522210424-ecfc5a8d5446
 	wg-turn-client v0.0.0
 )
 
@@ -25,7 +27,6 @@ require (
 	github.com/cbeuw/connutil v1.0.1 // indirect
 	github.com/go-ole/go-ole v1.3.0 // indirect
 	github.com/godbus/dbus/v5 v5.1.0 // indirect
-	github.com/google/uuid v1.6.0 // indirect
 	github.com/gorilla/websocket v1.5.3 // indirect
 	github.com/jchv/go-winloader v0.0.0-20210711035445-715c2860da7e // indirect
 	github.com/klauspost/compress v1.18.2 // indirect
@@ -57,6 +58,7 @@ require (
 	github.com/wlynxg/anet v0.0.5 // indirect
 	golang.org/x/net v0.54.0 // indirect
 	golang.org/x/text v0.37.0 // indirect
+	golang.zx2c4.com/wintun v0.0.0-20230126152724-0fa3db229ce2 // indirect
 )
 
 replace wg-turn-client => ./client

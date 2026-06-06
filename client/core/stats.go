@@ -16,7 +16,7 @@ func NewStats() *Stats {
 	return &Stats{}
 }
 
-func (s *Stats) RunLoop(shutdown <-chan struct{}, emitter func(level, msg string)) {
+func (s *Stats) RunLoop(shutdown <-chan struct{}, logEmit func(level, msg string), statsEmit func(rx, tx int64, workers int32)) {
 	ticker := time.NewTicker(3 * time.Second)
 	defer ticker.Stop()
 
@@ -29,7 +29,10 @@ func (s *Stats) RunLoop(shutdown <-chan struct{}, emitter func(level, msg string
 			up := atomic.LoadInt64(&s.TotalBytesUp)
 			down := atomic.LoadInt64(&s.TotalBytesDown)
 			totalMB := float64(up+down) / (1024.0 * 1024.0)
-			emitter("INFO", fmt.Sprintf("[СТАТИСТИКА] Активных: %d | Трафик: %.2f МБ", active, totalMB))
+			logEmit("INFO", fmt.Sprintf("[СТАТИСТИКА] Активных: %d | Трафик: %.2f МБ", active, totalMB))
+			if statsEmit != nil {
+				statsEmit(down, up, active)
+			}
 		}
 	}
 }

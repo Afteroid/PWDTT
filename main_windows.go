@@ -1,5 +1,3 @@
-//go:build linux
-
 package main
 
 import (
@@ -8,7 +6,7 @@ import (
 	"github.com/wailsapp/wails/v2"
 	"github.com/wailsapp/wails/v2/pkg/options"
 	"github.com/wailsapp/wails/v2/pkg/options/assetserver"
-	"github.com/wailsapp/wails/v2/pkg/options/linux"
+	"github.com/wailsapp/wails/v2/pkg/options/windows"
 
 	"pwdtt-desktop/backend"
 )
@@ -28,8 +26,13 @@ var appIcon []byte
 //go:embed assets/icons/tree-icon.png
 var trayIcon []byte
 
+//go:embed assets/wintun.dll
+var wintunDLL []byte
+
 func main() {
+
 	backend.Init(deployScript, serverBinary)
+	backend.InitWintun(wintunDLL)
 	app := backend.NewApp(trayIcon)
 
 	err := wails.Run(&options.App{
@@ -46,8 +49,9 @@ func main() {
 		OnStartup:        app.Startup,
 		OnBeforeClose:    app.OnBeforeClose,
 		Bind:             []interface{}{app},
-		Linux: &linux.Options{
-			ProgramName: "PWDTT",
+		Windows: &windows.Options{
+			WebviewIsTransparent: false,
+			WindowIsTranslucent:  false,
 		},
 	})
 	if err != nil {

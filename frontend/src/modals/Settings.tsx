@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { IconSettings2, IconHash } from '@tabler/icons-react';
+import { IconSettings2, IconHash, IconChevronDown } from '@tabler/icons-react';
 import Hash from './Hash';
 import { settingsStore } from '../lib/store';
 import { tunnelStore } from '../lib/stores/tunnelStore';
@@ -18,6 +18,8 @@ export default function Settings({ onClose }: Props) {
   const [tunnelState, setTunnelState] = useState(() => tunnelStore.get());
   useEffect(() => tunnelStore.subscribe(setTunnelState), []);
   const locked = tunnelState === 'connected' || tunnelState === 'connecting';
+  const [advancedOpen, setAdvancedOpen] = useState(false);
+  const [advancedConfirm, setAdvancedConfirm] = useState(false);
 
   // Sync autoStart from backend on open
   useEffect(() => {
@@ -69,6 +71,20 @@ export default function Settings({ onClose }: Props) {
         .st-hash-btn { width: 100%; margin-top: 16px; padding: 13px; border: 1.5px solid var(--border); border-radius: 10px; background: var(--surface); color: var(--text); font-size: 14px; font-family: 'Geist', sans-serif; font-weight: 600; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px; }
         .st-locked { opacity: 0.4; pointer-events: none; }
         .st-lock-hint { font-size: 11px; color: var(--text-3); margin-bottom: 4px; text-align: center; }
+        .st-adv-toggle { width: 100%; display: flex; align-items: center; justify-content: space-between; background: none; border: none; border-top: 1px solid var(--border-2); padding: 11px 0 0; cursor: pointer; font-size: 13px; font-weight: 600; color: var(--text-3); font-family: 'Geist', sans-serif; margin-top: 4px; }
+        .st-adv-toggle svg { transition: transform 0.2s; }
+        .st-adv-toggle--open svg { transform: rotate(180deg); }
+        .st-adv-body { overflow: hidden; transition: max-height 0.25s ease, opacity 0.2s; }
+        .st-adv-body--open { max-height: 300px; opacity: 1; }
+        .st-adv-body--closed { max-height: 0; opacity: 0; pointer-events: none; }
+        .st-confirm-overlay { position: fixed; inset: 0; background: var(--overlay-bg); backdrop-filter: blur(4px); display: flex; align-items: center; justify-content: center; z-index: 200; }
+        .st-confirm { background: var(--surface); border-radius: 14px; padding: 22px 20px 18px; width: 320px; max-width: 92vw; box-shadow: var(--shadow); border: 1px solid var(--border); }
+        .st-confirm-title { font-size: 15px; font-weight: 700; color: var(--text); margin-bottom: 8px; }
+        .st-confirm-text { font-size: 13px; color: var(--text-2); line-height: 1.5; margin-bottom: 18px; }
+        .st-confirm-actions { display: flex; gap: 8px; justify-content: flex-end; }
+        .st-confirm-btn { padding: 8px 18px; border-radius: 8px; border: none; font-size: 13px; font-family: 'Geist', sans-serif; font-weight: 600; cursor: pointer; }
+        .st-confirm-btn--cancel { background: var(--seg-bg); color: var(--text); }
+        .st-confirm-btn--ok { background: var(--accent); color: var(--accent-fg); }
       `}</style>
       <div className="st-overlay" onClick={handleClose}>
         <div className="st-modal" onClick={e => e.stopPropagation()}>
@@ -80,31 +96,22 @@ export default function Settings({ onClose }: Props) {
 
           {locked && <div className="st-lock-hint">Недоступно во время подключения</div>}
 
-          <div className={`st-slider-wrap${locked ? ' st-locked' : ''}`}>
-            <div className="st-slider-label"><span>Мощность</span><span>{settings.power}</span></div>
-            <input
-              type="range" min={9} max={powerMax} step={9} value={Math.min(settings.power, powerMax)}
-              className="st-slider"
-              style={{ '--v': Math.round((Math.min(settings.power, powerMax) - 9) / Math.max(powerMax - 9, 1) * 100) } as React.CSSProperties}
-              onChange={e => update('power', +e.target.value)}
-            />
-          </div>
-
-          <div className={`st-row${locked ? ' st-locked' : ''}`}>
-            <span>MTU</span>
-            <input
-              type="number" min={576} max={1500} step={1}
-              value={mtuRaw}
-              className={`st-num-input${!mtuValid ? ' st-num-input--error' : ''}`}
-              onChange={e => setMtuRaw(e.target.value)}
-              onBlur={() => {
-                const n = Number(mtuRaw);
-                const clamped = Number.isFinite(n) ? Math.max(576, Math.min(1500, Math.round(n))) : 1280;
-                setMtuRaw(String(clamped));
-                update('mtu', clamped);
-              }}
-            />
-          </div>
+          {settings.useGlobalHashes ? (
+            <div className={`st-slider-wrap${locked ? ' st-locked' : ''}`}>
+              <div className="st-slider-label"><span>Мощность</span><span>{settings.power}</span></div>
+              <input
+                type="range" min={9} max={powerMax} step={9} value={Math.min(settings.power, powerMax)}
+                className="st-slider"
+                style={{ '--v': Math.round((Math.min(settings.power, powerMax) - 9) / Math.max(powerMax - 9, 1) * 100) } as React.CSSProperties}
+                onChange={e => update('power', +e.target.value)}
+              />
+            </div>
+          ) : (
+            <div className="st-slider-wrap" style={{ opacity: 0.5 }}>
+              <div className="st-slider-label"><span>Мощность</span><span>профиль</span></div>
+              <div style={{ fontSize: 12, color: 'var(--text-3)' }}>Настраивается в редакторе профиля</div>
+            </div>
+          )}
 
           <div className="st-row">
             <span>Трей</span>
@@ -124,12 +131,67 @@ export default function Settings({ onClose }: Props) {
             }} />
           </div>
 
-          <button className="st-hash-btn" onClick={() => setHashOpen(true)}>
+          <div className="st-row">
+            <span>Глобальные хеши</span>
+            <button className={`st-toggle st-toggle--${settings.useGlobalHashes ? 'on' : 'off'}`} onClick={() => update('useGlobalHashes', !settings.useGlobalHashes)} />
+          </div>
+
+          <button
+            className="st-hash-btn"
+            style={!settings.useGlobalHashes ? { opacity: 0.35, pointerEvents: 'none' } : undefined}
+            onClick={() => setHashOpen(true)}
+            title={!settings.useGlobalHashes ? 'Глобальные хеши отключены — используются хеши профиля' : undefined}
+          >
             <IconHash stroke={2} size={16} />
             VK Хеши ({filledHashes}/4)
           </button>
+
+          <button
+            className={`st-adv-toggle${advancedOpen ? ' st-adv-toggle--open' : ''}`}
+            onClick={() => {
+              if (!advancedOpen) setAdvancedConfirm(true);
+              else setAdvancedOpen(false);
+            }}
+          >
+            <span>Расширенные</span>
+            <IconChevronDown stroke={2} size={16} />
+          </button>
+
+          <div className={`st-adv-body${advancedOpen ? ' st-adv-body--open' : ' st-adv-body--closed'}`}>
+            <div className={`st-row${locked ? ' st-locked' : ''}`} style={{ marginTop: 10 }}>
+              <span>MTU</span>
+              <input
+                type="number" min={576} max={1500} step={1}
+                value={mtuRaw}
+                className={`st-num-input${!mtuValid ? ' st-num-input--error' : ''}`}
+                onChange={e => setMtuRaw(e.target.value)}
+                onBlur={() => {
+                  const n = Number(mtuRaw);
+                  const clamped = Number.isFinite(n) ? Math.max(576, Math.min(1500, Math.round(n))) : 1280;
+                  setMtuRaw(String(clamped));
+                  update('mtu', clamped);
+                }}
+              />
+            </div>
+          </div>
         </div>
       </div>
+
+      {advancedConfirm && (
+        <div className="st-confirm-overlay" onClick={() => setAdvancedConfirm(false)}>
+          <div className="st-confirm" onClick={e => e.stopPropagation()}>
+            <div className="st-confirm-title">⚠ Расширенные настройки</div>
+            <div className="st-confirm-text">
+              Изменение этих параметров может нарушить работу туннеля.
+              Продолжать только если вы понимаете что делаете.
+            </div>
+            <div className="st-confirm-actions">
+              <button className="st-confirm-btn st-confirm-btn--cancel" onClick={() => setAdvancedConfirm(false)}>Отмена</button>
+              <button className="st-confirm-btn st-confirm-btn--ok" onClick={() => { setAdvancedConfirm(false); setAdvancedOpen(true); }}>Продолжить</button>
+            </div>
+          </div>
+        </div>
+      )}
       {hashOpen && (
         <Hash
           hashes={settings.hashes}

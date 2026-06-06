@@ -3,7 +3,6 @@ import { IconCircleHalf2 } from '@tabler/icons-react';
 import type { Server } from '../lib/types';
 import { SaveProfile } from '../../wailsjs/go/backend/App';
 import { parseWdttUrl } from '../lib/utils/wdttLink';
-import { settingsStore } from '../lib/store';
 
 interface Props {
   onClose: () => void;
@@ -25,7 +24,6 @@ export default function AddServer({ onClose, onAdd }: Props) {
     setPort(parsed.dtlsPort);
     setPassword(parsed.password);
     if (parsed.name !== 'Server') setName(parsed.name);
-    else if (!name) setName(`${parsed.ip}:${parsed.dtlsPort}`);
   };
 
   const handleAdd = async () => {
@@ -41,13 +39,8 @@ export default function AddServer({ onClose, onAdd }: Props) {
       turn: '', port: '', device_id: '', listen: '',
     });
 
-    if (hashes.length > 0) {
-      const s = settingsStore.get();
-      const yes = window.confirm('Ссылка содержит хеши. Перезаписать текущие хеши?');
-      if (yes) settingsStore.save({ ...s, hashes: hashes.slice(0, 4) as [string,string,string,string] });
-    }
-
-    onAdd({ name: name.trim(), host, password });
+    const h4: [string,string,string,string] = [hashes[0]??'', hashes[1]??'', hashes[2]??'', hashes[3]??''];
+    onAdd({ name: name.trim(), host, password, hashes: h4 });
     onClose();
   };
 

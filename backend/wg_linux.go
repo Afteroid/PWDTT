@@ -17,6 +17,8 @@ var (
 )
 
 func applyWGConfig(conf string, turnIPs []string) error {
+	teardownWG()
+
 	addr, mtu, allowedIPs, wgConf := parseWGConfig(conf)
 	if addr == "" {
 		return fmt.Errorf("Address not found in wg config")
@@ -43,11 +45,8 @@ func applyWGConfig(conf string, turnIPs []string) error {
 	// Делаем файл читаемым для root (sudo)
 	_ = os.Chmod(tmpName, 0644)
 
-	// Создаём интерфейс; если уже существует — не ошибка
 	if err := run("ip", "link", "add", wgIface, "type", "wireguard"); err != nil {
-		if !strings.Contains(err.Error(), "File exists") {
-			return fmt.Errorf("ip link add: %w", err)
-		}
+		return fmt.Errorf("ip link add: %w", err)
 	}
 
 	if err := run("wg", "setconf", wgIface, tmpName); err != nil {

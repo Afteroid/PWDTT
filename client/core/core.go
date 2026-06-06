@@ -21,7 +21,7 @@ type Config struct {
 	DeviceID    string   // -device-id
 	Workers     int      // -n
 	CaptchaMode string   // -captcha-mode
-	MTU         int      // 0 = default 1280
+	MTU         int      // 0 = default 1380
 }
 
 // EventType — тип события от ядра.
@@ -32,6 +32,7 @@ const (
 	EventLog   EventType = "log"
 	EventEvent EventType = "event"
 	EventError EventType = "error"
+	EventStats EventType = "stats"
 )
 
 // Event — событие от ядра к orchestrator.
@@ -48,6 +49,11 @@ type Event struct {
 	// event
 	Name string
 	Data string
+
+	// stats
+	RxBytes int64
+	TxBytes int64
+	Workers int32
 }
 
 // Core — runtime controller ядра.
@@ -189,9 +195,14 @@ func (c *Core) Start() (<-chan Event, error) {
 		<-ctx.Done()
 		close(shutdownCh)
 	}()
-	go stats.RunLoop(shutdownCh, func(level, msg string) {
-		c.emit(Event{Type: EventLog, Level: level, Message: msg})
-	})
+	go stats.RunLoop(shutdownCh,
+		func(level, msg string) {
+			c.emit(Event{Type: EventLog, Level: level, Message: msg})
+		},
+		func(rx, tx int64, workers int32) {
+			c.emit(Event{Type: EventStats, RxBytes: rx, TxBytes: tx, Workers: workers})
+		},
+	)
 
 	disp := NewDispatcher(ctx, localConn, stats)
 

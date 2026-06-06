@@ -1,7 +1,10 @@
 import { useState } from 'react';
-import { IconCircleHalf2 } from '@tabler/icons-react';
+import type React from 'react';
+import { IconCircleHalf2, IconInfoCircle, IconHash } from '@tabler/icons-react';
 import type { Server } from '../lib/types';
-import { SaveProfile, DeleteProfile, GetProfile } from '../../wailsjs/go/backend/App';
+import { settingsStore } from '../lib/store';
+import Hash from './Hash';
+import { SaveProfile, DeleteProfile } from '../../wailsjs/go/backend/App';
 
 interface Props {
   server: Server;
@@ -12,10 +15,29 @@ interface Props {
 
 export default function EditServer({ server, onClose, onSave, onDelete }: Props) {
   const [name, setName] = useState(server.name);
-  const [ip, port0] = server.host.includes(':') ? server.host.split(':') : [server.host, '56000'];
+  const lastColon = server.host.lastIndexOf(':');
+  const ip = lastColon !== -1 ? server.host.slice(0, lastColon) : server.host;
+  const port0 = lastColon !== -1 ? server.host.slice(lastColon + 1) : '56000';
   const [serverIp, setServerIp] = useState(ip);
   const [serverPort, setServerPort] = useState(port0);
   const [password, setPassword] = useState(server.password);
+  const [hashes, setHashes] = useState<[string,string,string,string]>(
+    server.hashes ?? ['', '', '', '']
+  );
+  const [hashOpen, setHashOpen] = useState(false);
+
+  const globalOn = settingsStore.get().useGlobalHashes;
+  const filledHashes = hashes.filter(h => h.trim()).length;
+  const powerMax = Math.max(9, filledHashes * 27);
+  const [power, setPower] = useState<number>(server.power ?? Math.max(9, filledHashes * 9));
+
+  const handleHashSave = (h: [string, string, string, string]) => {
+    setHashes(h);
+    const filled = h.filter(x => x.trim()).length;
+    const newMax = Math.max(9, filled * 27);
+    // если текущая мощность больше нового макс или не была задана вручную — подстрой
+    setPower(p => Math.min(p, newMax) || Math.max(9, filled * 9));
+  };
 
   const handleSave = async () => {
     if (!name.trim() || !serverIp.trim()) return;
@@ -24,10 +46,9 @@ export default function EditServer({ server, onClose, onSave, onDelete }: Props)
       name: name.trim(),
       host: `${serverIp.trim()}:${serverPort.trim() || '56000'}`,
       password,
+      hashes,
+      power,
     };
-    // читаем существующие хеши чтобы не затереть
-    const existing = await GetProfile(server.name).catch(() => null);
-    const hashes = existing?.hashes ?? [];
     if (server.name !== updated.name) {
       await DeleteProfile(server.name).catch(() => {});
     }
@@ -35,10 +56,7 @@ export default function EditServer({ server, onClose, onSave, onDelete }: Props)
       peer: updated.host,
       password: updated.password,
       hashes,
-      turn: '',
-      port: '',
-      device_id: '',
-      listen: '',
+      turn: '', port: '', device_id: '', listen: '',
     });
     onSave(updated);
     onClose();
@@ -60,14 +78,18 @@ export default function EditServer({ server, onClose, onSave, onDelete }: Props)
         .es-close { background: none; border: none; cursor: pointer; font-size: 18px; color: var(--text); line-height: 1; padding: 0; }
         .es-input { width: 100%; padding: 11px 14px; border: 1.5px solid var(--input-border); border-radius: 10px; font-size: 14px; font-family: 'Geist', sans-serif; outline: none; margin-bottom: 10px; box-sizing: border-box; color: var(--text); background: var(--input-bg); }
         .es-input::placeholder { color: var(--text-4); }
-        .es-textarea { width: 100%; padding: 10px 14px; border: 1.5px solid var(--input-border); border-radius: 10px; font-size: 13px; font-family: 'Geist Mono', monospace; outline: none; margin-bottom: 10px; box-sizing: border-box; color: var(--text); background: var(--input-bg); resize: vertical; min-height: 70px; }
-        .es-textarea::placeholder { color: var(--text-4); }
-        .es-label { font-size: 12px; color: var(--text-3); margin-bottom: 5px; display: block; }
+        .es-hash-btn { width: 100%; margin-top: 4px; margin-bottom: 10px; padding: 13px; border: 1.5px solid var(--border); border-radius: 10px; background: var(--surface); color: var(--text); font-size: 14px; font-family: 'Geist', sans-serif; font-weight: 600; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px; }
         .es-btn-row { display: flex; gap: 10px; margin-top: 4px; }
         .es-btn { flex: 1; padding: 13px; border: none; border-radius: 10px; font-size: 14px; font-family: 'Geist', sans-serif; font-weight: 600; cursor: pointer; }
         .es-btn--save { background: var(--accent); color: var(--accent-fg); }
         .es-btn--save:disabled { opacity: 0.4; cursor: not-allowed; }
         .es-btn--delete { background: #cc0000; color: #fff; }
+        .es-hint { display: flex; align-items: center; gap: 5px; font-size: 11px; color: var(--text-3); margin-bottom: 8px; }
+        .es-slider-wrap { padding: 4px 0 11px; border-bottom: 1px solid var(--border-2); margin-bottom: 10px; }
+        .es-slider-label { display: flex; justify-content: space-between; font-size: 14px; color: var(--text); margin-bottom: 8px; }
+        .es-slider { width: 100%; -webkit-appearance: none; appearance: none; height: 4px; border-radius: 2px; outline: none; cursor: pointer; background: linear-gradient(to right, var(--accent) calc(var(--v) * 1%), var(--border) calc(var(--v) * 1%)); }
+        .es-slider::-webkit-slider-thumb { -webkit-appearance: none; width: 18px; height: 18px; border-radius: 50%; background: var(--surface); border: 2px solid var(--accent); cursor: pointer; }
+        .es-slider--disabled { opacity: 0.4; pointer-events: none; }
       `}</style>
       <div className="es-overlay" onClick={onClose}>
         <div className="es-modal" onClick={e => e.stopPropagation()}>
@@ -76,18 +98,59 @@ export default function EditServer({ server, onClose, onSave, onDelete }: Props)
             <span className="es-title">Редактирование сервера</span>
             <button className="es-close" onClick={onClose}>✕</button>
           </div>
+
           <input className="es-input" placeholder="Название сервера" value={name} onChange={e => setName(e.target.value)} />
           <div style={{ display: 'flex', gap: 8 }}>
             <input className="es-input" style={{ flex: 1 }} placeholder="IP сервера" value={serverIp} onChange={e => setServerIp(e.target.value)} />
             <input className="es-input" style={{ width: 100 }} placeholder="Порт" value={serverPort} onChange={e => setServerPort(e.target.value)} />
           </div>
           <input className="es-input" placeholder="Пароль туннеля" type="password" value={password} onChange={e => setPassword(e.target.value)} />
+
+          <div className={`es-slider-wrap${globalOn ? ' es-slider--disabled' : ''}`}>
+            <div className="es-slider-label">
+              <span>Мощность</span>
+              <span>{globalOn ? '—' : (filledHashes === 0 ? 'нет хешей' : power)}</span>
+            </div>
+            <input
+              type="range" min={9} max={powerMax} step={9}
+              value={Math.min(power, powerMax)}
+              className="es-slider"
+              disabled={globalOn || filledHashes === 0}
+              style={{ '--v': filledHashes > 0 ? Math.round((Math.min(power, powerMax) - 9) / Math.max(powerMax - 9, 1) * 100) : 0 } as React.CSSProperties}
+              onChange={e => setPower(+e.target.value)}
+            />
+          </div>
+
+          <button
+            className="es-hash-btn"
+            style={globalOn ? { opacity: 0.35, pointerEvents: 'none' } : undefined}
+            onClick={() => setHashOpen(true)}
+            title={globalOn ? 'Включены глобальные хеши — профильные не используются' : undefined}
+          >
+            <IconHash stroke={2} size={16} />
+            Хеши профиля ({filledHashes}/4)
+            {globalOn && <IconInfoCircle size={14} style={{ marginLeft: 4, color: 'var(--text-3)' }} />}
+          </button>
+          {globalOn && (
+            <div className="es-hint">
+              <IconInfoCircle size={11} />
+              Отключите «Глобальные хеши» в Настройках, чтобы использовать хеши профиля
+            </div>
+          )}
+
           <div className="es-btn-row">
             <button className="es-btn es-btn--save" onClick={handleSave} disabled={!name.trim() || !serverIp.trim()}>Сохранить</button>
             <button className="es-btn es-btn--delete" onClick={handleDelete}>Удалить</button>
           </div>
         </div>
       </div>
+      {hashOpen && (
+        <Hash
+          hashes={hashes}
+          onClose={() => setHashOpen(false)}
+          onSave={handleHashSave}
+        />
+      )}
     </>
   );
 }

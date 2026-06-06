@@ -1,10 +1,13 @@
 export interface Server {
   id: string;
   name: string;
-  host: string;       // peer addr (ip:port)
+  host: string;
   password: string;
   deviceId?: string;
   ping?: number;
+  icon?: string;
+  hashes?: [string, string, string, string];
+  power?: number;
 }
 
 export interface AppSettings {
@@ -14,6 +17,7 @@ export interface AppSettings {
   tray: boolean;
   autoStart: boolean;
   hashes: [string, string, string, string];
+  useGlobalHashes: boolean;
 }
 
 export type TunnelState = 'idle' | 'connecting' | 'connected' | 'disconnecting';
@@ -43,8 +47,9 @@ export type DeployState = 'idle' | 'deploying' | 'removing';
 export const DEFAULT_SETTINGS: AppSettings = {
   bypassMode: 'АВТ',
   power: 9,
-  mtu: 1280,
+  mtu: 1380,
   tray: true,
   autoStart: true,
   hashes: ['', '', '', ''],
+  useGlobalHashes: false,
 };

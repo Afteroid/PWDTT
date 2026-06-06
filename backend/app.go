@@ -9,6 +9,7 @@ import (
 	"strings"
 	"sync/atomic"
 
+	"github.com/google/uuid"
 	"github.com/wailsapp/wails/v2/pkg/runtime"
 )
 
@@ -16,6 +17,7 @@ type App struct {
 	ctx         context.Context
 	orch        *Orchestrator
 	trayEnabled atomic.Bool
+	quitting    atomic.Bool
 	trayIcon    []byte
 }
 
@@ -23,16 +25,27 @@ func NewApp(trayIcon []byte) *App { return &App{trayIcon: trayIcon} }
 
 func (a *App) Startup(ctx context.Context) {
 	a.ctx = ctx
-	a.orch = NewOrchestrator(ctx)
+	a.orch = NewOrchestrator(ctx, a.updateTray)
 	startTray(a.trayIcon,
 		func() { runtime.WindowShow(ctx) },
-		func() { a.trayEnabled.Store(false); runtime.Quit(ctx) },
+		func() {
+			if a.orch.IsRunning() {
+				a.orch.Stop()
+			} else {
+				runtime.WindowShow(ctx)
+			}
+		},
+		func() { a.quitting.Store(true); a.orch.Stop(); os.Exit(0) },
 	)
+}
+
+func (a *App) updateTray(connected bool, rx, tx int64, workers int32) {
+	setTrayStatus(connected, rx, tx, workers)
 }
 
 // OnBeforeClose hides the window instead of quitting when tray is enabled.
 func (a *App) OnBeforeClose(ctx context.Context) bool {
-	if a.trayEnabled.Load() {
+	if a.trayEnabled.Load() && !a.quitting.Load() {
 		runtime.WindowHide(ctx)
 		return true // prevent close
 	}
@@ -76,6 +89,13 @@ func (a *App) SaveProfile(name string, p ProfileData) error {
 	dir := filepath.Join(configDir(), "profiles")
 	if err := os.MkdirAll(dir, 0755); err != nil {
 		return err
+	}
+	if p.DeviceID == "" {
+		if existing, err := loadProfile(name); err == nil && existing.DeviceID != "" {
+			p.DeviceID = existing.DeviceID
+		} else {
+			p.DeviceID = uuid.New().String()
+		}
 	}
 	data, err := json.Marshal(p)
 	if err != nil {

@@ -3,70 +3,126 @@
 package backend
 
 import (
+	_ "embed"
+	"encoding/base64"
+	"encoding/hex"
 	"fmt"
 	"log"
 	"os"
 	"os/exec"
 	"path/filepath"
 	"strings"
-	"time"
+	"syscall"
+
+	"golang.zx2c4.com/wireguard/conn"
+	"golang.zx2c4.com/wireguard/device"
+	"golang.zx2c4.com/wireguard/tun"
 )
 
-// wireguard.exe path — official WireGuard for Windows client
-const wireguardExe = `C:\Program Files\WireGuard\wireguard.exe`
+// wintunDLL is set by InitWintun called from main_windows.go
+var wintunDLL []byte
 
-var activeTunnelConf string // path to the temp conf file
-var activeExcludeRoutes []string
+var (
+	activeDevice        *device.Device
+	activeTun           tun.Device
+	activeExcludeRoutes []string
+)
+
+func InitWintun(dll []byte) { wintunDLL = dll }
+
+// extractWintun writes the embedded wintun.dll next to the exe so the wintun
+// package can load it via LoadLibrary.
+func extractWintun() error {
+	exe, err := os.Executable()
+	if err != nil {
+		return err
+	}
+	dst := filepath.Join(filepath.Dir(exe), "wintun.dll")
+	if _, err := os.Stat(dst); err == nil {
+		return nil // already extracted
+	}
+	return os.WriteFile(dst, wintunDLL, 0644)
+}
 
 func applyWGConfig(conf string, turnIPs []string) error {
 	teardownWG()
 
-	addr, mtuStr, allowedIPs, _ := parseWGConfig(conf)
+	if err := extractWintun(); err != nil {
+		return fmt.Errorf("extract wintun.dll: %w", err)
+	}
+
+	addr, mtuStr, allowedIPs, wgConf := parseWGConfig(conf)
 	if addr == "" {
 		return fmt.Errorf("Address not found in wg config")
 	}
-	_ = allowedIPs // wireguard.exe handles AllowedIPs routing natively
 
-	// Write config without PostUp/PreDown — we add routes manually below
-	finalConf := injectWGQuickFields(conf, mtuStr, "", "")
-	confPath := filepath.Join(os.TempDir(), wgIface+".conf")
-	if err := os.WriteFile(confPath, []byte(finalConf), 0600); err != nil {
-		return fmt.Errorf("write wg conf: %w", err)
+	mtu := 1380
+	if mtuStr != "" {
+		fmt.Sscanf(mtuStr, "%d", &mtu)
 	}
-	activeTunnelConf = confPath
 
-	// Add exclude routes BEFORE installing tunnel so VK API stays reachable
+	// Create wintun TUN interface
+	tunDev, err := tun.CreateTUN(wgIface, mtu)
+	if err != nil {
+		return fmt.Errorf("create TUN: %w", err)
+	}
+	activeTun = tunDev
+
+	// Create userspace WireGuard device
+	logger := &device.Logger{
+		Verbosef: func(format string, args ...interface{}) {},
+		Errorf:   func(format string, args ...interface{}) { log.Printf("[WG] "+format, args...) },
+	}
+	dev := device.NewDevice(tunDev, conn.NewDefaultBind(), logger)
+	activeDevice = dev
+
+	if err := dev.IpcSetOperation(strings.NewReader(uapiConf(wgConf))); err != nil {
+		return fmt.Errorf("IpcSet: %w", err)
+	}
+
+	if err := dev.Up(); err != nil {
+		return fmt.Errorf("device up: %w", err)
+	}
+
+	// Set IP address on the interface
+	if err := run("netsh", "interface", "ip", "set", "address",
+		"name="+wgIface, "source=static", addr, "none"); err != nil {
+		// addr may be CIDR — extract host part
+		host, mask, _ := parseCIDR(addr)
+		if host != "" {
+			_ = run("netsh", "interface", "ip", "set", "address",
+				"name="+wgIface, "source=static", host, mask)
+		}
+	}
+
+	// Exclude routes BEFORE adding tunnel routes
 	gw := defaultGateway()
 	if gw != "" {
-		var excludeIPs []string
+		var excludes []string
 		for _, ip := range turnIPs {
-			excludeIPs = append(excludeIPs, ip+"/32")
+			excludes = append(excludes, ip+"/32")
 		}
-		excludeIPs = append(excludeIPs, vkExcludeCIDRs...)
-		for _, cidr := range excludeIPs {
+		excludes = append(excludes, vkExcludeCIDRs...)
+		for _, cidr := range excludes {
 			ip, mask, err := parseCIDR(cidr)
 			if err != nil {
 				continue
 			}
-			// Ignore errors — route may already exist
 			_ = run("route", "add", ip, "mask", mask, gw)
 		}
-		activeExcludeRoutes = excludeIPs
+		activeExcludeRoutes = excludes
 	}
 
-	// Install tunnel service
-	if err := run(wireguardExe, "/installtunnelservice", confPath); err != nil {
-		return fmt.Errorf("wireguard install tunnel: %w", err)
+	// Add AllowedIPs routes via the WG interface
+	for _, cidr := range allowedIPs {
+		_ = run("netsh", "interface", "ip", "add", "route", cidr, wgIface)
 	}
 
-	// Wait for interface to come up
-	time.Sleep(2 * time.Second)
-	log.Printf("[WG] Туннель %s поднят через wireguard.exe", wgIface)
+	log.Printf("[WG] Туннель %s поднят (userspace)", wgIface)
 	return nil
 }
 
 func teardownWG() {
-	// Remove exclude routes first so VK API stays reachable during teardown
 	for _, cidr := range activeExcludeRoutes {
 		ip, _, _ := parseCIDR(cidr)
 		if ip != "" {
@@ -75,39 +131,84 @@ func teardownWG() {
 	}
 	activeExcludeRoutes = nil
 
-	if err := run(wireguardExe, "/uninstalltunnelservice", wgIface); err != nil {
-		_ = err
+	if activeDevice != nil {
+		activeDevice.Close()
+		activeDevice = nil
 	}
-	if activeTunnelConf != "" {
-		_ = os.Remove(activeTunnelConf)
-		activeTunnelConf = ""
+	if activeTun != nil {
+		activeTun.Close()
+		activeTun = nil
 	}
 }
 
-// injectWGQuickFields adds PostUp/PreDown/MTU to the [Interface] section.
-func injectWGQuickFields(conf, mtu, postUp, preDown string) string {
+// uapiConf converts a wg-setconf-compatible config (with [Interface]/[Peer] sections)
+// into the UAPI protocol format expected by device.IpcSetOperation.
+//
+// UAPI format: flat key=value, no section headers, hex keys, starts with "set=1\n",
+// peers separated by a blank line.
+func uapiConf(wgConf string) string {
 	var sb strings.Builder
-	injected := false
-	for _, line := range strings.Split(conf, "\n") {
-		sb.WriteString(line + "\n")
-		if !injected && strings.TrimSpace(line) == "[Interface]" {
-			if mtu != "" {
-				sb.WriteString("MTU = " + mtu + "\n")
+	inPeer := false
+	for _, line := range strings.Split(wgConf, "\n") {
+		trimmed := strings.TrimSpace(line)
+		if trimmed == "" || strings.HasPrefix(trimmed, "#") {
+			continue
+		}
+		if trimmed == "[Interface]" {
+			inPeer = false
+			continue
+		}
+		if trimmed == "[Peer]" {
+			if inPeer {
+				sb.WriteString("\n") // blank line separates peers
 			}
-			if postUp != "" {
-				sb.WriteString("PostUp = " + strings.TrimSuffix(strings.TrimSpace(postUp), "&") + "\n")
+			inPeer = true
+			continue
+		}
+		parts := strings.SplitN(trimmed, "=", 2)
+		if len(parts) != 2 {
+			continue
+		}
+		key := strings.ToLower(strings.TrimSpace(parts[0]))
+		val := strings.TrimSpace(parts[1])
+
+		switch key {
+		case "privatekey":
+			sb.WriteString("private_key=" + toHex(val) + "\n")
+		case "listenport":
+			sb.WriteString("listen_port=" + val + "\n")
+		case "publickey":
+			sb.WriteString("public_key=" + toHex(val) + "\n")
+		case "presharedkey":
+			sb.WriteString("preshared_key=" + toHex(val) + "\n")
+		case "endpoint":
+			sb.WriteString("endpoint=" + val + "\n")
+		case "allowedips":
+			for _, cidr := range strings.Split(val, ",") {
+				if c := strings.TrimSpace(cidr); c != "" {
+					sb.WriteString("allowed_ip=" + c + "\n")
+				}
 			}
-			if preDown != "" {
-				sb.WriteString("PreDown = " + strings.TrimSuffix(strings.TrimSpace(preDown), "&") + "\n")
-			}
-			injected = true
+		case "persistentkeepalive":
+			sb.WriteString("persistent_keepalive_interval=" + val + "\n")
 		}
 	}
+	sb.WriteString("\n") // final terminator
 	return sb.String()
+}
+
+// toHex converts a base64-encoded WireGuard key to lowercase hex.
+func toHex(b64 string) string {
+	raw, err := base64.StdEncoding.DecodeString(b64)
+	if err != nil {
+		return b64 // already hex or garbage — return as-is
+	}
+	return hex.EncodeToString(raw)
 }
 
 func run(name string, args ...string) error {
 	cmd := exec.Command(name, args...)
+	cmd.SysProcAttr = &syscall.SysProcAttr{HideWindow: true}
 	out, err := cmd.CombinedOutput()
 	if err != nil {
 		return fmt.Errorf("%s %v: %w — %s", name, args, err, strings.TrimSpace(string(out)))
@@ -116,14 +217,14 @@ func run(name string, args ...string) error {
 }
 
 func defaultGateway() string {
-	// Use `route print` to find default gateway
-	out, err := exec.Command("cmd", "/c", "route print 0.0.0.0").Output()
+	cmd := exec.Command("cmd", "/c", "route print 0.0.0.0")
+	cmd.SysProcAttr = &syscall.SysProcAttr{HideWindow: true}
+	out, err := cmd.Output()
 	if err != nil {
 		return ""
 	}
 	for _, line := range strings.Split(string(out), "\n") {
 		fields := strings.Fields(line)
-		// Format: Network Dest  Netmask  Gateway  Interface  Metric
 		if len(fields) >= 3 && fields[0] == "0.0.0.0" && fields[1] == "0.0.0.0" {
 			return fields[2]
 		}

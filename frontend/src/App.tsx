@@ -38,7 +38,9 @@ function useWailsEvents() {
         logStore.push((level as LogLevel) ?? 'INFO', String(msg ?? ''));
       }),
       EventsOn('error', (msg: unknown) => {
-        logStore.push('ERROR', String(msg ?? ''));
+        const s = String(msg ?? '');
+        logStore.push('ERROR', s);
+        toastStore.show(s, 5000);
       }),
       EventsOn('state_changed', (status: unknown) => {
         const s = String(status ?? '');
