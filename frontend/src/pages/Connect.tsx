@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import type React from 'react';
 import {
   IconCloverFilled, IconPlus, IconChevronUp, IconPencil,
@@ -95,13 +95,33 @@ export default function Connect() {
   const [servers, setServers] = useState<Server[]>(() => serverStore.getAll());
   const [selected, setSelected] = useState<Server | null>(() => {
     const all = serverStore.getAll();
-    return all.length > 0 ? all[0] : null;
+    if (all.length === 0) return null;
+    const lastId = serverStore.getLastSelectedId();
+    return all.find(s => s.id === lastId) ?? all[0];
   });
   const [listOpen, setListOpen] = useState(false);
 
   // tunnelState из глобального store — переживает смену роута
   const [tunnelState, setTunnelState] = useState<TunnelState>(() => tunnelStore.get());
   useEffect(() => tunnelStore.subscribe(setTunnelState), []);
+
+  const selectedRef = useRef(selected);
+  selectedRef.current = selected;
+
+  const tunnelStateRef = useRef(tunnelState);
+  tunnelStateRef.current = tunnelState;
+
+  useEffect(() => {
+    serverStore.setLastSelectedId(selected?.id ?? null);
+  }, [selected?.id]);
+
+  useEffect(() => {
+    const s = settingsStore.get();
+    if (!s.autoConnect) return;
+    if (tunnelStateRef.current !== 'idle') return;
+    if (!selectedRef.current) return;
+    doConnect();
+  }, []);
 
   const [addServerOpen, setAddServerOpen] = useState(false);
   const [editServer, setEditServer] = useState<Server | null>(null);
@@ -145,10 +165,12 @@ export default function Connect() {
   }, []);
 
   const doConnect = async () => {
+    const cur = selectedRef.current;
+    if (!cur) return;
     const s = settingsStore.get();
     const hashes = (s.useGlobalHashes
       ? s.hashes
-      : (selected!.hashes ?? s.hashes)
+      : (cur.hashes ?? s.hashes)
     ).filter(h => h.trim());
     if (hashes.length === 0) {
       toastStore.show(s.useGlobalHashes
@@ -161,9 +183,9 @@ export default function Connect() {
     try {
       const workers = s.useGlobalHashes
         ? (s.power || 9)
-        : (selected!.power || Math.max(9, hashes.length * 9));
+        : (cur.power || Math.max(9, hashes.length * 9));
       await WailsConnect({
-        profile: selected!.name,
+        profile: cur.name,
         captchaMode: 'auto',
         workers,
         mtu: s.mtu || 1380,
@@ -177,7 +199,7 @@ export default function Connect() {
   const [reconnectAt, setReconnectAt] = useState(0); // timestamp когда можно снова подключиться
 
   const handleTunnel = async () => {
-    if (!selected) return;
+    if (!selectedRef.current) return;
     if (tunnelState === 'idle') {
       if (Date.now() < reconnectAt) {
         const secs = Math.ceil((reconnectAt - Date.now()) / 1000);

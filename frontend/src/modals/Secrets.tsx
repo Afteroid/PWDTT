@@ -40,7 +40,7 @@ export default function Secrets({ onClose, onSave, showPorts }: Props) {
         .modal-section-label::before, .modal-section-label::after { content: ''; flex: 1; height: 1px; background: var(--border); }
         .modal-btn { width: 100%; padding: 13px; border: none; border-radius: 10px; background: var(--accent); color: var(--accent-fg); font-size: 14px; font-family: 'Geist', sans-serif; font-weight: 600; cursor: pointer; margin-top: 16px; }
       `}</style>
-      <div className="modal-overlay" onClick={onClose}>
+      <div className="modal-overlay">
         <div className="modal" onClick={e => e.stopPropagation()}>
           <div className="modal-header">
             <IconCodeAsterisk stroke={2} size={20} />

@@ -43,8 +43,23 @@ func sshUpload(client *ssh.Client, data []byte, remotePath string) error {
 		return err
 	}
 	defer sess.Close()
-	sess.Stdin = bytes.NewReader(data)
-	return sess.Run("cat > " + remotePath)
+
+	stdin, err := sess.StdinPipe()
+	if err != nil {
+		return err
+	}
+	sess.Stderr = io.Discard
+
+	if err := sess.Start(fmt.Sprintf("dd of=%s bs=1M 2>/dev/null", remotePath)); err != nil {
+		return err
+	}
+
+	if _, err := io.Copy(stdin, bytes.NewReader(data)); err != nil {
+		stdin.Close()
+		return err
+	}
+	stdin.Close()
+	return sess.Wait()
 }
 
 func sshExecStream(client *ssh.Client, cmd string, onLine func(string)) (string, error) {
@@ -126,11 +141,13 @@ func (a *App) Deploy(p DeployParams) error {
 	if err := sshUpload(client, deployScript, "/tmp/deploy.sh"); err != nil {
 		return fmt.Errorf("upload deploy.sh: %w", err)
 	}
-	emit("Загрузка wdtt-server...")
+	emit(fmt.Sprintf("deploy.sh загружен (%d КБ) ✓", len(deployScript)/1024))
+
+	emit(fmt.Sprintf("Загрузка wdtt-server... (%d МБ)", len(serverBinary)/1024/1024))
 	if err := sshUpload(client, serverBinary, "/tmp/wdtt-server"); err != nil {
 		return fmt.Errorf("upload wdtt-server: %w", err)
 	}
-	emit("Файлы загружены ✓")
+	emit(fmt.Sprintf("wdtt-server загружен (%d МБ) ✓", len(serverBinary)/1024/1024))
 
 	var argParts []string
 	if p.MainPassword != "" {

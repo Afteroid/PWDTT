@@ -3,6 +3,7 @@ import { DEFAULT_SETTINGS, DEFAULT_DEPLOY } from './types';
 
 const SERVERS_KEY = 'wdtt_servers';
 const SETTINGS_KEY = 'wdtt_settings';
+const LAST_SERVER_KEY = 'wdtt_last_server';
 
 function parse<T>(key: string, fallback: T): T {
   try {
@@ -27,6 +28,11 @@ export const serverStore = {
   },
   remove: (id: string) => {
     serverStore.save(serverStore.getAll().filter(s => s.id !== id));
+  },
+  getLastSelectedId: (): string | null => parse<string | null>(LAST_SERVER_KEY, null),
+  setLastSelectedId: (id: string | null) => {
+    if (id) localStorage.setItem(LAST_SERVER_KEY, JSON.stringify(id));
+    else localStorage.removeItem(LAST_SERVER_KEY);
   },
 };
 

@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { IconCircleHalf2 } from '@tabler/icons-react';
+import { IconCircleHalf2, IconEye, IconEyeOff } from '@tabler/icons-react';
 import type { Server } from '../lib/types';
 import { SaveProfile } from '../../wailsjs/go/backend/App';
 import { parseWdttUrl } from '../lib/utils/wdttLink';
@@ -15,6 +15,7 @@ export default function AddServer({ onClose, onAdd }: Props) {
   const [ip, setIp] = useState('');
   const [port, setPort] = useState('56000');
   const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
 
   const applyLink = (raw: string) => {
     setLink(raw);
@@ -59,7 +60,7 @@ export default function AddServer({ onClose, onAdd }: Props) {
         .as-btn { width: 100%; padding: 13px; border: none; border-radius: 10px; background: var(--accent); color: var(--accent-fg); font-size: 14px; font-family: 'Geist', sans-serif; font-weight: 600; cursor: pointer; margin-top: 4px; }
         .as-btn:disabled { opacity: 0.4; cursor: not-allowed; }
       `}</style>
-      <div className="as-overlay" onClick={onClose}>
+      <div className="as-overlay">
         <div className="as-modal" onClick={e => e.stopPropagation()}>
           <div className="as-header">
             <IconCircleHalf2 stroke={2} size={22} />
@@ -81,7 +82,12 @@ export default function AddServer({ onClose, onAdd }: Props) {
             <input className="as-input" style={{ flex: 1 }} placeholder="IP сервера" value={ip} onChange={e => setIp(e.target.value)} />
             <input className="as-input" style={{ width: 100 }} placeholder="Порт" value={port} onChange={e => setPort(e.target.value)} />
           </div>
-          <input className="as-input" placeholder="Пароль туннеля" type="password" value={password} onChange={e => setPassword(e.target.value)} />
+          <div style={{ position: 'relative', display: 'flex', alignItems: 'center', marginBottom: 10 }}>
+            <input className="as-input" placeholder="Пароль туннеля" type={showPassword ? 'text' : 'password'} value={password} onChange={e => setPassword(e.target.value)} style={{ paddingRight: 36, marginBottom: 0 }} />
+            <button type="button" onClick={() => setShowPassword(v => !v)} style={{ position: 'absolute', right: 10, background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-4)', padding: 0, display: 'flex', alignItems: 'center' }}>
+              {showPassword ? <IconEyeOff size={18} /> : <IconEye size={18} />}
+            </button>
+          </div>
           <button className="as-btn" onClick={handleAdd} disabled={!name.trim() || !ip.trim()}>Добавить сервер</button>
         </div>
       </div>

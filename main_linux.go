@@ -48,6 +48,7 @@ func main() {
 		Bind:             []interface{}{app},
 		Linux: &linux.Options{
 			ProgramName: "PWDTT",
+			Icon:        appIcon,
 		},
 	})
 	if err != nil {

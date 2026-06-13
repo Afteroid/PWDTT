@@ -16,6 +16,7 @@ export interface AppSettings {
   mtu: number;
   tray: boolean;
   autoStart: boolean;
+  autoConnect: boolean;
   hashes: [string, string, string, string];
   useGlobalHashes: boolean;
 }
@@ -50,6 +51,7 @@ export const DEFAULT_SETTINGS: AppSettings = {
   mtu: 1380,
   tray: true,
   autoStart: true,
+  autoConnect: false,
   hashes: ['', '', '', ''],
   useGlobalHashes: false,
 };

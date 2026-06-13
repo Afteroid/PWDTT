@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { IconLockPassword, IconServer2, IconServerOff } from '@tabler/icons-react';
+import { IconLockPassword, IconServer2, IconServerOff, IconEye, IconEyeOff } from '@tabler/icons-react';
 import Secrets from './Secrets';
 import { deployStore } from '../lib/store';
 import type { DeployConfig, DeployState } from '../lib/types';
@@ -13,6 +13,7 @@ interface Props {
 export default function Deploy({ onClose }: Props) {
   const [cfg, setCfg] = useState<DeployConfig>(() => deployStore.get());
   const [secretsOpen, setSecretsOpen] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
   const [deployState, setDeployState] = useState<DeployState>('idle');
   const [logs, setLogs] = useState<string[]>([]);
   const logRef = useRef<HTMLDivElement>(null);
@@ -103,7 +104,7 @@ export default function Deploy({ onClose }: Props) {
         .toggle--on::after { background: var(--accent-fg); left: 24px; }
         .deploy-log { background: #0d0d0f; color: #a1a1aa; border-radius: 8px; padding: 10px; font-size: 12px; font-family: monospace; max-height: 140px; overflow-y: auto; margin-top: 14px; white-space: pre-wrap; word-break: break-all; }
       `}</style>
-      <div className="modal-overlay" onClick={onClose}>
+      <div className="modal-overlay">
         <div className="modal" onClick={e => e.stopPropagation()}>
           <div className="modal-header">
             <IconServer2 stroke={2} size={20} />
@@ -113,7 +114,12 @@ export default function Deploy({ onClose }: Props) {
 
           <input className="modal-input" placeholder="IP или Домен (без порта)" value={cfg.host} onChange={e => set('host', e.target.value)} disabled={busy} />
           <input className="modal-input" placeholder="Логин (по умолчанию root)" value={cfg.login} onChange={e => set('login', e.target.value)} disabled={busy} />
-          <input className="modal-input" placeholder="Пароль SSH" type="password" value={cfg.password} onChange={e => set('password', e.target.value)} disabled={busy} />
+          <div style={{ position: 'relative', display: 'flex', alignItems: 'center', marginBottom: 10 }}>
+            <input className="modal-input" placeholder="Пароль SSH" type={showPassword ? 'text' : 'password'} value={cfg.password} onChange={e => set('password', e.target.value)} disabled={busy} style={{ paddingRight: 36, marginBottom: 0 }} />
+            <button type="button" onClick={() => setShowPassword(v => !v)} style={{ position: 'absolute', right: 10, background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-4)', padding: 0, display: 'flex', alignItems: 'center' }}>
+              {showPassword ? <IconEyeOff size={18} /> : <IconEye size={18} />}
+            </button>
+          </div>
 
           <button className="secrets-btn" onClick={() => setSecretsOpen(true)} disabled={busy}>
             <IconLockPassword stroke={2} size={18} />

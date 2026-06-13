@@ -46,7 +46,7 @@ export default function Hash({ hashes, onClose, onSave }: Props) {
         .hash-input::placeholder { color: var(--text-4); }
         .hash-btn { width: 100%; padding: 13px; border: none; border-radius: 10px; background: var(--accent); color: var(--accent-fg); font-size: 14px; font-family: 'Geist', sans-serif; font-weight: 600; cursor: pointer; margin-top: 4px; }
       `}</style>
-      <div className="hash-overlay" onClick={onClose}>
+      <div className="hash-overlay">
         <div className="hash-modal" onClick={e => e.stopPropagation()}>
           <div className="hash-header">
             <IconHash stroke={2} size={22} />

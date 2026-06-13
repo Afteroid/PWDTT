@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import type React from 'react';
-import { IconCircleHalf2, IconInfoCircle, IconHash } from '@tabler/icons-react';
+import { IconCircleHalf2, IconInfoCircle, IconHash, IconEye, IconEyeOff } from '@tabler/icons-react';
 import type { Server } from '../lib/types';
 import { settingsStore } from '../lib/store';
 import Hash from './Hash';
@@ -21,6 +21,7 @@ export default function EditServer({ server, onClose, onSave, onDelete }: Props)
   const [serverIp, setServerIp] = useState(ip);
   const [serverPort, setServerPort] = useState(port0);
   const [password, setPassword] = useState(server.password);
+  const [showPassword, setShowPassword] = useState(false);
   const [hashes, setHashes] = useState<[string,string,string,string]>(
     server.hashes ?? ['', '', '', '']
   );
@@ -91,7 +92,7 @@ export default function EditServer({ server, onClose, onSave, onDelete }: Props)
         .es-slider::-webkit-slider-thumb { -webkit-appearance: none; width: 18px; height: 18px; border-radius: 50%; background: var(--surface); border: 2px solid var(--accent); cursor: pointer; }
         .es-slider--disabled { opacity: 0.4; pointer-events: none; }
       `}</style>
-      <div className="es-overlay" onClick={onClose}>
+      <div className="es-overlay">
         <div className="es-modal" onClick={e => e.stopPropagation()}>
           <div className="es-header">
             <IconCircleHalf2 size={22} />
@@ -104,7 +105,12 @@ export default function EditServer({ server, onClose, onSave, onDelete }: Props)
             <input className="es-input" style={{ flex: 1 }} placeholder="IP сервера" value={serverIp} onChange={e => setServerIp(e.target.value)} />
             <input className="es-input" style={{ width: 100 }} placeholder="Порт" value={serverPort} onChange={e => setServerPort(e.target.value)} />
           </div>
-          <input className="es-input" placeholder="Пароль туннеля" type="password" value={password} onChange={e => setPassword(e.target.value)} />
+          <div style={{ position: 'relative', display: 'flex', alignItems: 'center', marginBottom: 10 }}>
+            <input className="es-input" placeholder="Пароль туннеля" type={showPassword ? 'text' : 'password'} value={password} onChange={e => setPassword(e.target.value)} style={{ paddingRight: 36, marginBottom: 0 }} />
+            <button type="button" onClick={() => setShowPassword(v => !v)} style={{ position: 'absolute', right: 10, background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-4)', padding: 0, display: 'flex', alignItems: 'center' }}>
+              {showPassword ? <IconEyeOff size={18} /> : <IconEye size={18} />}
+            </button>
+          </div>
 
           <div className={`es-slider-wrap${globalOn ? ' es-slider--disabled' : ''}`}>
             <div className="es-slider-label">

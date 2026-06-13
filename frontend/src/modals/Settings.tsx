@@ -29,13 +29,19 @@ export default function Settings({ onClose }: Props) {
   }, []);
 
   const update = <K extends keyof AppSettings>(key: K, value: AppSettings[K]) => {
-    setSettings(s => ({ ...s, [key]: value }));
+    setSettings(s => {
+      const next = { ...s, [key]: value };
+      settingsStore.save(next);
+      return next;
+    });
   };
 
   const handleClose = () => {
     const n = Number(mtuRaw);
     const mtu = mtuValid ? n : settings.mtu;
-    settingsStore.save({ ...settings, mtu });
+    if (mtu !== settings.mtu) {
+      update('mtu', mtu);
+    }
     onClose();
   };
 
@@ -129,6 +135,11 @@ export default function Settings({ onClose }: Props) {
               update('autoStart', next);
               SetAutoStart(next);
             }} />
+          </div>
+
+          <div className="st-row">
+            <span>Авто-подключение</span>
+            <button className={`st-toggle st-toggle--${settings.autoConnect ? 'on' : 'off'}`} onClick={() => update('autoConnect', !settings.autoConnect)} />
           </div>
 
           <div className="st-row">
