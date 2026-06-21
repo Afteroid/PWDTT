@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { IconHash } from '@tabler/icons-react';
+import { IconHash, IconX } from '@tabler/icons-react';
 import { toastStore } from '../lib/stores/toastStore';
 
 interface Props {
@@ -51,7 +51,7 @@ export default function Hash({ hashes, onClose, onSave }: Props) {
           <div className="hash-header">
             <IconHash stroke={2} size={22} />
             <span className="hash-title">Hash</span>
-            <button className="hash-close" onClick={onClose}>✕</button>
+            <button className="hash-close" onClick={onClose}><IconX size={18} /></button>
           </div>
           {values.map((v, i) => (
             <input key={i} className="hash-input" placeholder={`Hash - ${i + 1}`} value={v} onChange={e => set(i, e.target.value)} />

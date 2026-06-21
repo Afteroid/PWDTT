@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { IconSettings2, IconHash, IconChevronDown } from '@tabler/icons-react';
+import { IconSettings2, IconHash, IconChevronDown, IconX, IconAlertTriangle } from '@tabler/icons-react';
 import Hash from './Hash';
 import { settingsStore } from '../lib/store';
 import { tunnelStore } from '../lib/stores/tunnelStore';
@@ -85,7 +85,7 @@ export default function Settings({ onClose }: Props) {
         .st-adv-body--closed { max-height: 0; opacity: 0; pointer-events: none; }
         .st-confirm-overlay { position: fixed; inset: 0; background: var(--overlay-bg); backdrop-filter: blur(4px); display: flex; align-items: center; justify-content: center; z-index: 200; }
         .st-confirm { background: var(--surface); border-radius: 14px; padding: 22px 20px 18px; width: 320px; max-width: 92vw; box-shadow: var(--shadow); border: 1px solid var(--border); }
-        .st-confirm-title { font-size: 15px; font-weight: 700; color: var(--text); margin-bottom: 8px; }
+        .st-confirm-title { font-size: 15px; font-weight: 700; color: var(--text); margin-bottom: 8px; display: flex; align-items: center; gap: 6px; }
         .st-confirm-text { font-size: 13px; color: var(--text-2); line-height: 1.5; margin-bottom: 18px; }
         .st-confirm-actions { display: flex; gap: 8px; justify-content: flex-end; }
         .st-confirm-btn { padding: 8px 18px; border-radius: 8px; border: none; font-size: 13px; font-family: 'Geist', sans-serif; font-weight: 600; cursor: pointer; }
@@ -97,7 +97,7 @@ export default function Settings({ onClose }: Props) {
           <div className="st-header">
             <IconSettings2 stroke={2} size={20} />
             <span className="st-title">Настройки</span>
-            <button className="st-close" onClick={handleClose}>✕</button>
+            <button className="st-close" onClick={handleClose}><IconX size={18} /></button>
           </div>
 
           {locked && <div className="st-lock-hint">Недоступно во время подключения</div>}
@@ -191,7 +191,7 @@ export default function Settings({ onClose }: Props) {
       {advancedConfirm && (
         <div className="st-confirm-overlay" onClick={() => setAdvancedConfirm(false)}>
           <div className="st-confirm" onClick={e => e.stopPropagation()}>
-            <div className="st-confirm-title">⚠ Расширенные настройки</div>
+            <div className="st-confirm-title"><IconAlertTriangle size={15} /> Расширенные настройки</div>
             <div className="st-confirm-text">
               Изменение этих параметров может нарушить работу туннеля.
               Продолжать только если вы понимаете что делаете.

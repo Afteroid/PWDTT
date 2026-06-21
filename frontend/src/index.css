@@ -5,6 +5,20 @@
   src: url('/fonts/Geist-500.woff2') format('woff2');
 }
 
+@font-face {
+  font-family: 'Geist';
+  font-weight: 600;
+  font-display: block;
+  src: url('/fonts/Geist-600.woff2') format('woff2');
+}
+
+@font-face {
+  font-family: 'Geist';
+  font-weight: 700;
+  font-display: block;
+  src: url('/fonts/Geist-700.woff2') format('woff2');
+}
+
 :root {
   --bg: #f7f7f8;
   --bg-2: #f0f0f2;

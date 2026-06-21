@@ -65,7 +65,7 @@ import { toastStore } from '../lib/stores/toastStore';
 import { wdttLinkStore } from '../lib/utils/wdttLink';
 import { SaveProfile } from '../../wailsjs/go/backend/App';
 import type { Server, TunnelState } from '../lib/types';
-import { Connect as WailsConnect, Disconnect as WailsDisconnect } from '../../wailsjs/go/backend/App';
+import { Connect as WailsConnect, Disconnect as WailsDisconnect, ListProfiles } from '../../wailsjs/go/backend/App';
 import shapeLight from '../assets/shape-light.png';
 import shapeDark from '../assets/shape-dark.png';
 import powerIcon from '../assets/power-icon.png';
@@ -100,6 +100,28 @@ export default function Connect() {
     return all.find(s => s.id === lastId) ?? all[0];
   });
   const [listOpen, setListOpen] = useState(false);
+
+  useEffect(() => {
+    ListProfiles().then(profiles => {
+      if (!profiles) return;
+      const existing = serverStore.getAll();
+      const existingNames = new Set(existing.map(s => s.name));
+      let changed = false;
+      for (const [name, p] of Object.entries(profiles)) {
+        if (existingNames.has(name)) continue;
+        const host = p.peer || '';
+        if (!host) continue;
+        const h4: [string,string,string,string] = [p.hashes?.[0]??'', p.hashes?.[1]??'', p.hashes?.[2]??'', p.hashes?.[3]??''];
+        serverStore.add({ name, host, password: p.password ?? '', hashes: h4 });
+        changed = true;
+      }
+      if (changed) {
+        setServers(serverStore.getAll());
+        const all = serverStore.getAll();
+        if (!selected && all.length > 0) setSelected(all[0]);
+      }
+    }).catch(() => {});
+  }, []);
 
   // tunnelState из глобального store — переживает смену роута
   const [tunnelState, setTunnelState] = useState<TunnelState>(() => tunnelStore.get());

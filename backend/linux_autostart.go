@@ -18,9 +18,9 @@ func (a *App) SetAutoStart(v bool) error {
 		_ = os.Remove(path)
 		return nil
 	}
-	_ = os.MkdirAll(dir, 0755)
+	_ = os.MkdirAll(dir, 0o755)
 	content := "[Desktop Entry]\nType=Application\nName=PWDTT\nExec=" + exec + "\nX-GNOME-Autostart-enabled=true\n"
-	return os.WriteFile(path, []byte(content), 0644)
+	return os.WriteFile(path, []byte(content), 0o644)
 }
 
 func (a *App) GetAutoStart() bool {

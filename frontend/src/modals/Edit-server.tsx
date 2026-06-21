@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import type React from 'react';
-import { IconCircleHalf2, IconInfoCircle, IconHash, IconEye, IconEyeOff } from '@tabler/icons-react';
+import { IconCircleHalf2, IconInfoCircle, IconHash, IconEye, IconEyeOff, IconX } from '@tabler/icons-react';
 import type { Server } from '../lib/types';
 import { settingsStore } from '../lib/store';
 import Hash from './Hash';
@@ -58,7 +58,7 @@ export default function EditServer({ server, onClose, onSave, onDelete }: Props)
       password: updated.password,
       hashes,
       turn: '', port: '', device_id: '', listen: '',
-    });
+    }).catch(() => {});
     onSave(updated);
     onClose();
   };
@@ -97,7 +97,7 @@ export default function EditServer({ server, onClose, onSave, onDelete }: Props)
           <div className="es-header">
             <IconCircleHalf2 size={22} />
             <span className="es-title">Редактирование сервера</span>
-            <button className="es-close" onClick={onClose}>✕</button>
+            <button className="es-close" onClick={onClose}><IconX size={18} /></button>
           </div>
 
           <input className="es-input" placeholder="Название сервера" value={name} onChange={e => setName(e.target.value)} />

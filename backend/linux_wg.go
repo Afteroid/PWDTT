@@ -43,7 +43,7 @@ func applyWGConfig(conf string, turnIPs []string) error {
 	tmp.Close()
 
 	// Делаем файл читаемым для root (sudo)
-	_ = os.Chmod(tmpName, 0644)
+	_ = os.Chmod(tmpName, 0o644)
 
 	if err := run("ip", "link", "add", wgIface, "type", "wireguard"); err != nil {
 		return fmt.Errorf("ip link add: %w", err)

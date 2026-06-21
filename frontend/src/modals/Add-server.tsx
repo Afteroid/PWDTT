@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { IconCircleHalf2, IconEye, IconEyeOff } from '@tabler/icons-react';
+import { IconCircleHalf2, IconEye, IconEyeOff, IconX } from '@tabler/icons-react';
 import type { Server } from '../lib/types';
 import { SaveProfile } from '../../wailsjs/go/backend/App';
 import { parseWdttUrl } from '../lib/utils/wdttLink';
@@ -33,12 +33,16 @@ export default function AddServer({ onClose, onAdd }: Props) {
     const parsed = parseWdttUrl(link.trim());
     const hashes = parsed?.hashes ?? [];
 
-    await SaveProfile(name.trim(), {
-      peer: host,
-      password,
-      hashes,
-      turn: '', port: '', device_id: '', listen: '',
-    });
+    try {
+      await SaveProfile(name.trim(), {
+        peer: host,
+        password,
+        hashes,
+        turn: '', port: '', device_id: '', listen: '',
+      });
+    } catch (e) {
+      console.warn('SaveProfile failed:', e);
+    }
 
     const h4: [string,string,string,string] = [hashes[0]??'', hashes[1]??'', hashes[2]??'', hashes[3]??''];
     onAdd({ name: name.trim(), host, password, hashes: h4 });
@@ -65,7 +69,7 @@ export default function AddServer({ onClose, onAdd }: Props) {
           <div className="as-header">
             <IconCircleHalf2 stroke={2} size={22} />
             <span className="as-title">Добавление сервера</span>
-            <button className="as-close" onClick={onClose}>✕</button>
+            <button className="as-close" onClick={onClose}><IconX size={18} /></button>
           </div>
 
           <input

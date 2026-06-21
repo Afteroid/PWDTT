@@ -87,7 +87,7 @@ func (a *App) CheckVPN() []string {
 
 func (a *App) SaveProfile(name string, p ProfileData) error {
 	dir := filepath.Join(configDir(), "profiles")
-	if err := os.MkdirAll(dir, 0755); err != nil {
+	if err := os.MkdirAll(dir, 0o755); err != nil {
 		return err
 	}
 	if p.DeviceID == "" {
@@ -101,7 +101,7 @@ func (a *App) SaveProfile(name string, p ProfileData) error {
 	if err != nil {
 		return err
 	}
-	return os.WriteFile(profilePath(name), data, 0600)
+	return os.WriteFile(profilePath(name), data, 0o600)
 }
 
 func (a *App) GetProfile(name string) (*ProfileData, error) {
@@ -110,4 +110,29 @@ func (a *App) GetProfile(name string) (*ProfileData, error) {
 
 func (a *App) DeleteProfile(name string) error {
 	return os.Remove(profilePath(name))
+}
+
+func (a *App) ListProfiles() map[string]ProfileData {
+	dir := filepath.Join(configDir(), "profiles")
+	entries, err := os.ReadDir(dir)
+	if err != nil {
+		return nil
+	}
+	result := make(map[string]ProfileData)
+	for _, e := range entries {
+		if e.IsDir() || !strings.HasSuffix(e.Name(), ".json") {
+			continue
+		}
+		name := strings.TrimSuffix(e.Name(), ".json")
+		var p ProfileData
+		data, err := os.ReadFile(filepath.Join(dir, e.Name()))
+		if err != nil {
+			continue
+		}
+		if err := json.Unmarshal(data, &p); err != nil {
+			continue
+		}
+		result[name] = p
+	}
+	return result
 }

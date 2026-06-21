@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { IconLockPassword, IconServer2, IconServerOff, IconEye, IconEyeOff } from '@tabler/icons-react';
+import { IconLockPassword, IconServer2, IconServerOff, IconEye, IconEyeOff, IconX } from '@tabler/icons-react';
 import Secrets from './Secrets';
 import { deployStore } from '../lib/store';
 import type { DeployConfig, DeployState } from '../lib/types';
@@ -109,7 +109,7 @@ export default function Deploy({ onClose }: Props) {
           <div className="modal-header">
             <IconServer2 stroke={2} size={20} />
             <span className="modal-title">Деплой</span>
-            <button className="modal-close" onClick={onClose}>✕</button>
+            <button className="modal-close" onClick={onClose}><IconX size={18} /></button>
           </div>
 
           <input className="modal-input" placeholder="IP или Домен (без порта)" value={cfg.host} onChange={e => set('host', e.target.value)} disabled={busy} />

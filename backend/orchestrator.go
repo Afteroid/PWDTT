@@ -13,6 +13,7 @@ import (
 	"time"
 
 	"github.com/wailsapp/wails/v2/pkg/runtime"
+
 	"wg-turn-client/core"
 )
 
@@ -33,12 +34,12 @@ type logEntry struct{ level, msg string }
 
 func newSessionLogFile(peerIP string) *os.File {
 	dir := filepath.Join(configDir(), "logs")
-	if err := os.MkdirAll(dir, 0755); err != nil {
+	if err := os.MkdirAll(dir, 0o755); err != nil {
 		return nil
 	}
 	ts := time.Now().Format("2006-01-02_15-04-05")
 	name := ts + "_" + peerIP + ".log"
-	f, err := os.OpenFile(filepath.Join(dir, name), os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0644)
+	f, err := os.OpenFile(filepath.Join(dir, name), os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0o644)
 	if err != nil {
 		return nil
 	}
@@ -130,7 +131,7 @@ func configDir() string {
 		base = os.Getenv("HOME")
 	}
 	dir := filepath.Join(base, "pwdtt")
-	_ = os.MkdirAll(dir, 0755)
+	_ = os.MkdirAll(dir, 0o755)
 	return dir
 }
 
@@ -281,13 +282,14 @@ func (o *Orchestrator) forwardEvents(sess *coreSession) {
 			runtime.EventsEmit(o.appCtx, "log", ev.Level, ev.Message)
 			if strings.Contains(ev.Message, "FATAL_AUTH") {
 				friendly := ev.Message
-				if strings.Contains(friendly, "неверный пароль") {
+				switch {
+				case strings.Contains(friendly, "неверный пароль"):
 					friendly = "Неверный пароль подключения"
-				} else if strings.Contains(friendly, "истёк") {
+				case strings.Contains(friendly, "истёк"):
 					friendly = "Срок действия пароля истёк"
-				} else if strings.Contains(friendly, "другому устройству") {
+				case strings.Contains(friendly, "другому устройству"):
 					friendly = "Пароль привязан к другому устройству"
-				} else if strings.Contains(friendly, "запрещён") {
+				case strings.Contains(friendly, "запрещён"):
 					friendly = "Доступ запрещён сервером"
 				}
 				runtime.EventsEmit(o.appCtx, "error", friendly)

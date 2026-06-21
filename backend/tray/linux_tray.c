@@ -1,11 +1,13 @@
-#include "tray_linux.h"
+#include "linux_tray.h"
 #include <libayatana-appindicator/app-indicator.h>
 #include <gtk/gtk.h>
 #include <stdio.h>
+#include <libgen.h>
+#include <string.h>
 
 static AppIndicator *indicator = NULL;
 static GtkWidget *menu = NULL;
-static GtkWidget *status_label = NULL; /* GtkLabel внутри кастомного item */
+static GtkWidget *status_label = NULL;
 
 extern void onShowClicked();
 extern void onQuitClicked();
@@ -13,7 +15,6 @@ extern void onQuitClicked();
 static void show_cb(GtkMenuItem *item, gpointer data) { onShowClicked(); }
 static void quit_cb(GtkMenuItem *item, gpointer data) { onQuitClicked(); }
 
-/* Создаёт GtkMenuItem с GtkLabel внутри (поддержка Pango markup) */
 static GtkWidget *make_markup_item(GtkWidget **out_label, const char *markup) {
     GtkWidget *item = gtk_menu_item_new();
     GtkWidget *lbl  = gtk_label_new(NULL);
@@ -27,12 +28,27 @@ static GtkWidget *make_markup_item(GtkWidget **out_label, const char *markup) {
 void wdtt_tray_init(const char *icon_path) {
     gtk_init(NULL, NULL);
 
-    indicator = app_indicator_new("pwdtt", icon_path, APP_INDICATOR_CATEGORY_APPLICATION_STATUS);
+    char *path_copy = strdup(icon_path);
+    char *dir  = strdup(dirname(path_copy));
+    free(path_copy);
+
+    path_copy = strdup(icon_path);
+    char *dot = strrchr(basename(path_copy), '.');
+    if (dot) *dot = '\0';
+    char *name = strdup(basename(path_copy));
+    free(path_copy);
+
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+    indicator = app_indicator_new_with_path("pwdtt", name, APP_INDICATOR_CATEGORY_APPLICATION_STATUS, dir);
+#pragma GCC diagnostic pop
     app_indicator_set_status(indicator, APP_INDICATOR_STATUS_ACTIVE);
+
+    free(dir);
+    free(name);
 
     menu = gtk_menu_new();
 
-    /* Строка статуса: цветная точка + текст через Pango */
     GtkWidget *status_item = make_markup_item(&status_label,
         "<span color='#cc3333'>\xe2\x97\x8f</span> \xd0\x9e\xd1\x82\xd0\xba\xd0\xbb\xd1\x8e\xd1\x87\xd0\xb5\xd0\xbd\xd0\xbe");
     gtk_menu_shell_append(GTK_MENU_SHELL(menu), status_item);
@@ -60,7 +76,6 @@ static void update_status_label(int connected, long long rx, long long tx, int w
     char buf[256];
     if (connected) {
         double total_mb = (double)(rx + tx) / (1024.0 * 1024.0);
-        /* ● Подключено  ↑0.0 МБ  ворк: N */
         snprintf(buf, sizeof(buf),
             "<span color='#33cc33'>\xe2\x97\x8f</span>"
             " \xd0\x9f\xd0\xbe\xd0\xb4\xd0\xba\xd0\xbb\xd1\x8e\xd1\x87\xd0\xb5\xd0\xbd\xd0\xbe"

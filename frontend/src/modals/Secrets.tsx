@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { IconCodeAsterisk, IconRestore } from '@tabler/icons-react';
+import { IconCodeAsterisk, IconRestore, IconX } from '@tabler/icons-react';
 import { deployStore } from '../lib/store';
 import type { DeployConfig } from '../lib/types';
 
@@ -45,7 +45,7 @@ export default function Secrets({ onClose, onSave, showPorts }: Props) {
           <div className="modal-header">
             <IconCodeAsterisk stroke={2} size={20} />
             <span className="modal-title">Секреты</span>
-            <button className="modal-close" onClick={onClose}>✕</button>
+            <button className="modal-close" onClick={onClose}><IconX size={18} /></button>
           </div>
 
           <div style={{ position: 'relative', marginBottom: 12 }}>

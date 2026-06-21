@@ -15,6 +15,7 @@
   <img src="https://img.shields.io/badge/Wails-v2-red?style=for-the-badge&logo=wails&logoColor=white" alt="Wails">
   <img src="https://img.shields.io/badge/Linux-amd64-FCC624?style=for-the-badge&logo=linux&logoColor=black" alt="Linux">
   <img src="https://img.shields.io/badge/Windows-amd64-0078D4?style=for-the-badge&logo=windows&logoColor=white" alt="Windows">
+  <img src="https://img.shields.io/badge/macOS-universal-BE4F8C?style=for-the-badge&logo=apple&logoColor=white" alt="macOS">
 </p>
 
 ---
@@ -59,6 +60,28 @@ chmod +x pwdtt-linux-amd64
 
 Скачайте `pwdtt-windows-amd64.exe` из [Releases](https://github.com/luminescq/PWDTT/releases) и запустите. Драйвер WireGuard (wintun) встроен.
 
+### macOS (экспериментальная сборка)
+
+<IconAlertTriangleFilled /> **macOS-сборка является экспериментальной.** Бинарники не предоставляются — собирайте из исходников.
+
+Требования:
+- macOS 13+ (Ventura и выше)
+- Homebrew
+
+```bash
+# Зависимости
+brew install wireguard-tools go node
+go install github.com/wailsapp/wails/v2/cmd/wails@latest
+
+# Клонирование и сборка
+git clone https://github.com/luminescq/PWDTT.git
+cd PWDTT
+wails build -platform darwin/universal
+# → build/bin/PWDTT.app
+```
+
+Для работы приложению нужны права root — при первом запуске macOS запросит пароль.
+
 ---
 
 ## Быстрый старт
@@ -95,7 +118,7 @@ wdtt://1.2.3.4:56000:56001:0:mypassword:AbCdEfGh,XyZ12345#Мой сервер
 
 ## Сборка из исходников
 
-**Зависимости:** Go 1.22+, Node.js 18+, [Wails v2](https://wails.io)
+**Зависимости:** Go 1.26+, Node.js 22+, [Wails v2](https://wails.io)
 
 ```bash
 # Linux
@@ -112,6 +135,12 @@ wails build -platform linux/amd64 -o pwdtt-linux-amd64
 # Windows (кросс-компиляция с Linux)
 wails build -platform windows/amd64
 # → build/bin/pwdtt.exe
+```
+
+```bash
+# macOS (универсальный бинарник arm64 + x86_64)
+wails build -platform darwin/universal
+# → build/bin/PWDTT.app
 ```
 
 ---
